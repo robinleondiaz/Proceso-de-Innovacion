@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mapa Conceptual Interactivo - Unidad 2: Proceso de Innovación y Transferencia</title>
+<style>
+    :root {
+        --bg-body: #f1f5f9;
+        --dark-slate: #0f172a;
+        --blue-border: #2563eb;
+        --blue-bg: #eff6ff;
+        --green-border: #16a34a;
+        --green-bg: #f0fdf4;
+        --amber-border: #d97706;
+        --amber-bg: #fffbeb;
+        --orange-border: #ea580c;
+        --orange-bg: #fff7ed;
+        --purple-border: #7c3aed;
+        --purple-bg: #f5f3ff;
+    }
+    * {
+        box-sizing: border-box;
+    }
+    body {
+        margin: 0;
+        padding: 20px;
+        background-color: var(--bg-body);
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        color: #1e293b;
+        overflow-x: hidden;
+    }
+    .main-wrapper {
+        max-width: 1360px;
+        margin: 0 auto;
+        background: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0 12px 32px rgba(15, 23, 42, 0.1);
+        padding: 28px;
+        border: 1px solid #cbd5e1;
+        position: relative;
+    }
+    /* Encabezado Institucional */
+    .header {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 2px solid #e2e8f0;
+        padding-bottom: 18px;
+        margin-bottom: 20px;
+        gap: 15px;
+    }
+    .badge-inst {
+        background: #0f172a;
+        color: #f8fafc;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 5px 12px;
+        border-radius: 6px;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+        display: inline-block;
+        margin-bottom: 6px;
+    }
+    .header h1 {
+        margin: 0;
+        font-size: 22px;
+        color: #0f172a;
+    }
+    .header p {
+        margin: 4px 0 0 0;
+        font-size: 13.5px;
+        color: #475569;
+    }
+    .toolbar {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    .btn-tool {
+        background: #eff6ff;
+        border: 1.5px solid #3b82f6;
+        color: #1d4ed8;
+        padding: 8px 14px;
+        border-radius: 8px;
+        font-size: 12.5px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .btn-tool:hover {
+        background: #1d4ed8;
+        color: #ffffff;
+        transform: translateY(-3px) scale(1.03);
+        box-shadow: 0 8px 18px rgba(29, 78, 216, 0.25);
+    }
+    /* Barra de instrucciones de interactividad */
+    .instruction-banner {
+        background: linear-gradient(90deg, #eff6ff 0%, #f0fdf4 100%);
+        border: 1px solid #bfdbfe;
+        border-left: 5px solid #2563eb;
+        padding: 12px 18px;
+        border-radius: 8px;
+        font-size: 13px;
+        margin-bottom: 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    /* Lienzo del Mapa Conceptual */
+    #map-canvas {
+        position: relative;
+        padding: 15px 0;
+    }
+    #svg-connections {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 1;
+    }
+    /* Animación de flujo en conectores SVG */
+    .svg-connector-path {
+        stroke: #475569;
+        stroke-width: 2;
+        fill: none;
+        stroke-dasharray: 8 5;
+        animation: flowDash 25s linear infinite;
+        transition: stroke 0.3s ease, stroke-width 0.3s ease, filter 0.3s ease;
+    }
+    .svg-connector-path.highlight-path {
+        stroke: #2563eb;
+        stroke-width: 3.8;
+        stroke-dasharray: none;
+        filter: drop-shadow(0 0 6px rgba(37, 99, 235, 0.55));
+    }
+    @keyframes flowDash {
+        to { stroke-dashoffset: -500; }
+    }
+
+    .level-row {
+        display: flex;
+        justify-content: center;
+        gap: 180px;
+        margin-bottom: 84px;
+        position: relative;
+        z-index: 2;
+        flex-wrap: wrap;
+    }
+    .level-row.row-wide {
+        gap: 320px;
+    }
+    .level-row.last-row {
+        margin-bottom: 15px;
+    }
+
+    /* Nodos Conceptuales con Animación Sobresaliente */
+    .concept-node {
+        background: #ffffff;
+        border-radius: 14px;
+        padding: 16px 18px;
+        width: 345px;
+        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+        cursor: pointer;
+        transition: transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1),
+                    box-shadow 0.32s ease,
+                    border-color 0.32s ease;
+        position: relative;
+        border: 2px solid #94a3b8;
+        text-align: center;
+        overflow: hidden;
+    }
+    /* Brillo diagonal al pasar el mouse */
+    .concept-node::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -120%;
+        width: 60%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+        transform: skewX(-25deg);
+        transition: left 0.65s ease;
+        pointer-events: none;
+    }
+    .concept-node:hover::after {
+        left: 140%;
+    }
+    .concept-node:hover {
+        transform: translateY(-9px) scale(1.04);
+        box-shadow: 0 20px 34px rgba(37, 99, 235, 0.22), 0 0 0 4px rgba(59, 130, 246, 0.2);
+        z-index: 10;
+    }
+    .concept-node:active {
+        transform: translateY(-2px) scale(0.97);
+    }
+    /* Efecto de pulso al hacer clic */
+    .node-pulse-click {
+        animation: clickBounce 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes clickBounce {
+        0% { transform: scale(1); }
+        40% { transform: scale(0.93); }
+        80% { transform: scale(1.06); }
+        100% { transform: scale(1); }
+    }
+
+    /* Estilos por Categoría Semántica */
+    .node-root {
+        width: 400px;
+        background: linear-gradient(135deg, #0f172a 0%, #1d4ed8 100%);
+        color: #ffffff;
+        border-color: #60a5fa;
+    }
+    .node-blue {
+        border-color: var(--blue-border);
+        background: var(--blue-bg);
+    }
+    .node-green {
+        border-color: var(--green-border);
+        background: var(--green-bg);
+    }
+    .node-amber {
+        border-color: var(--amber-border);
+        background: var(--amber-bg);
+    }
+    .node-orange {
+        border-color: var(--orange-border);
+        background: var(--orange-bg);
+    }
+    .node-purple {
+        border-color: var(--purple-border);
+        background: var(--purple-bg);
+    }
+    .node-final {
+        width: 420px;
+        background: linear-gradient(135deg, #065f46 0%, #16a34a 100%);
+        color: #ffffff;
+        border-color: #4ade80;
+    }
+
+    .node-number {
+        display: inline-block;
+        font-size: 10.5px;
+        font-weight: 700;
+        padding: 3px 9px;
+        border-radius: 12px;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+    }
+    .node-root .node-number, .node-final .node-number {
+        background: rgba(255,255,255,0.22);
+        color: #ffffff;
+    }
+    .node-blue .node-number { background: #dbeafe; color: #1e40af; }
+    .node-green .node-number { background: #dcfce7; color: #15803d; }
+    .node-amber .node-number { background: #fef3c7; color: #b45309; }
+    .node-orange .node-number { background: #ffedd5; color: #c2410c; }
+    .node-purple .node-number { background: #ede9fe; color: #5b21b6; }
+
+    .node-title {
+        font-size: 14.5px;
+        font-weight: 800;
+        margin: 0 0 6px 0;
+        line-height: 1.3;
+        text-transform: uppercase;
+    }
+    .node-summary {
+        font-size: 12.5px;
+        margin: 0 0 10px 0;
+        line-height: 1.45;
+    }
+    .node-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 11px;
+        font-weight: 600;
+        padding-top: 8px;
+        border-top: 1px dashed rgba(100, 116, 139, 0.35);
+    }
+    .node-root .node-footer, .node-final .node-footer {
+        border-top-color: rgba(255,255,255,0.3);
+        color: #e2e8f0;
+    }
+    .click-hint {
+        color: #1d4ed8;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        transition: transform 0.2s ease;
+    }
+    .concept-node:hover .click-hint {
+        transform: translateX(3px);
+        font-weight: 800;
+    }
+    .node-root .click-hint, .node-final .click-hint { color: #fde047; }
+
+    /* Etiquetas de explicación sobre las líneas de conexión */
+    .connector-label {
+        position: absolute;
+        background: #ffffff;
+        border: 1.5px solid #94a3b8;
+        color: #1e293b;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 9px;
+        border-radius: 6px;
+        z-index: 3;
+        transform: translate(-50%, -50%);
+        white-space: nowrap;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        pointer-events: none;
+        transition: all 0.25s ease;
+    }
+    .connector-label.highlight-label {
+        background: #1e3a8a;
+        color: #ffffff;
+        border-color: #60a5fa;
+        transform: translate(-50%, -50%) scale(1.08);
+        z-index: 8;
+        box-shadow: 0 6px 14px rgba(30, 58, 138, 0.3);
+    }
+
+    /* Ventana Modal con Entrada Elástica */
+    .modal-overlay {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(15, 23, 42, 0.7);
+        backdrop-filter: blur(4px);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        padding: 20px;
+    }
+    .modal-overlay.active {
+        display: flex;
+    }
+    .modal-card {
+        background: #ffffff;
+        max-width: 760px;
+        width: 100%;
+        border-radius: 16px;
+        box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+        overflow: hidden;
+        animation: modalPop 0.34s cubic-bezier(0.34, 1.56, 0.64, 1);
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+    }
+    @keyframes modalPop {
+        0% { transform: scale(0.82) translateY(25px); opacity: 0; }
+        100% { transform: scale(1) translateY(0); opacity: 1; }
+    }
+    .modal-header {
+        background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+        color: #ffffff;
+        padding: 18px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+    .modal-header h2 {
+        margin: 4px 0 0 0;
+        font-size: 18.5px;
+    }
+    .btn-close {
+        background: rgba(255,255,255,0.15);
+        border: none;
+        color: #ffffff;
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        font-size: 18px;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+    .btn-close:hover { background: #ef4444; transform: rotate(90deg); }
+    .modal-body {
+        padding: 22px 24px;
+        overflow-y: auto;
+        font-size: 14px;
+        line-height: 1.6;
+        color: #334155;
+    }
+    .modal-section {
+        margin-bottom: 16px;
+        background: #f8fafc;
+        padding: 12px 16px;
+        border-radius: 8px;
+        border-left: 4px solid #2563eb;
+    }
+    .modal-section h4 {
+        margin: 0 0 6px 0;
+        font-size: 12.5px;
+        text-transform: uppercase;
+        color: #0f172a;
+        letter-spacing: 0.5px;
+    }
+    .modal-links {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 12px;
+    }
+    .btn-resource {
+        background: #2563eb;
+        color: #ffffff;
+        text-decoration: none;
+        padding: 9px 15px;
+        border-radius: 8px;
+        font-size: 12.5px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s ease;
+    }
+    .btn-resource.video-btn {
+        background: #dc2626;
+    }
+    .btn-resource:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 14px rgba(15, 23, 42, 0.2);
+        filter: brightness(1.08);
+    }
+
+    /* Tabla comparativa */
+    .comp-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12.5px;
+        margin-top: 10px;
+    }
+    .comp-table th, .comp-table td {
+        border: 1px solid #cbd5e1;
+        padding: 8px 10px;
+        text-align: left;
+    }
+    .comp-table th {
+        background: #0f172a;
+        color: #ffffff;
+    }
+    .comp-table tr:nth-child(even) { background: #f8fafc; }
+
+    @media (max-width: 1024px) {
+        #svg-connections, .connector-label { display: none; }
+        .level-row, .level-row.row-wide { gap: 20px; margin-bottom: 24px; }
+        .concept-node { width: 100% !important; }
+    }
+    @media print {
+        body { padding: 0; background: #ffffff; }
+        .main-wrapper { box-shadow: none; border: none; }
+        .toolbar { display: none; }
+    }
+</style>
+</head>
+<body>
+
+<div class="main-wrapper">
+    <!-- ENCABEZADO -->
+    <div class="header">
+        <div>
+            <span class="badge-inst">Tecnológica del Oriente • Unidad 2: Proceso de Innovación • ABP</span>
+            <h1>Proceso de Innovación y Transferencia del Conocimiento</h1>
+            <p>Integración de tipologías (Manual de Oslo), grados de novedad, las 7 fuentes de Drucker y transferencia tecnológica (Triple Hélice)</p>
+        </div>
+        <div class="toolbar">
+            <button class="btn-tool" onclick="openComparativeModal()">📊 Matriz Comparativa (Manual de Oslo y Drucker)</button>
+            <button class="btn-tool" onclick="openReferencesModal()">📚 Referencias Bibliográficas (APA)</button>
+            
+        </div>
+    </div>
+
+    <!-- BANNER DE INSTRUCCIÓN INTERACTIVA -->
+    <div class="instruction-banner">
+        <div>
+            <strong>💡 Interactividad Dinámica Mejorada:</strong> Hola profe, haz clic en cualquiera de las 13 tarjetas para abrir su ventana emergente con ampliación teórica, citas bibliográficas y enlaces multimedia</strong>.
+        </div>
+        <div style="font-weight: 700; color: #1e40af;">13 Conceptos Clave | 16 Conexiones Animadas | 26 Enlaces Directos</div>
+    </div>
+
+    <!-- LIENZO DEL MAPA CONCEPTUAL (11 FILAS JERÁRQUICAS) -->
+    <div id="map-canvas">
+        <svg id="svg-connections"></svg>
+        <div id="labels-container"></div>
+
+        <!-- FILA 1: NODO 1 (EJE CENTRAL) -->
+        <div class="level-row">
+            <div class="concept-node node-root" id="node-1" onclick="triggerNodeClick(this, 1)" onmouseenter="highlightNodeConnections('node-1', true)" onmouseleave="highlightNodeConnections('node-1', false)">
+                <span class="node-number">Concepto 1 • Fundamento Central</span>
+                <h3 class="node-title">1. Proceso de Innovación ( vs. Invención )</h3>
+                <p class="node-summary">Concepción e implantación de novedades significativas que transforman invenciones teóricas en valor real medible (Manual de Oslo).</p>
+                <div class="node-footer">
+                    <span>Ref: OCDE/Eurostat (2010)</span>
+                    <span class="click-hint">➕ Ver video y artículo</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- FILA 2: NODOS 2 Y 3 (TIPOLOGÍAS DEL MANUAL DE OSLO) -->
+        <div class="level-row row-wide">
+            <div class="concept-node node-blue" id="node-2" onclick="triggerNodeClick(this, 2)" onmouseenter="highlightNodeConnections('node-2', true)" onmouseleave="highlightNodeConnections('node-2', false)">
+                <span class="node-number">Concepto 2 • Tipología Oslo (Técnica)</span>
+                <h3 class="node-title">2. Innovación de Producto y de Proceso</h3>
+                <p class="node-summary">Introducción de bienes/servicios nuevos o mejorados (el qué) e implementación de métodos productivos o de software (el cómo hacerlo).</p>
+                <div class="node-footer">
+                    <span>Ref: Manual de Oslo (2010)</span>
+                    <span class="click-hint">➕ Ampliar nodo</span>
+                </div>
+            </div>
+
+            <div class="concept-node node-blue" id="node-3" onclick="triggerNodeClick(this, 3)" onmouseenter="highlightNodeConnections('node-3', true)" onmouseleave="highlightNodeConnections('node-3', false)">
+                <span class="node-number">Concepto 3 • Tipología Oslo (Gestión)</span>
+                <h3 class="node-title">3. Innovación de Marketing y Organizacional</h3>
+                <p class="node-summary">Nuevos métodos de comercialización, posicionamiento o precios (cómo venderlo) y rediseño de estructuras y alianzas (cómo organizarse).</p>
+                <div class="node-footer">
+                    <span>Ref: Manual de Oslo (2010)</span>
+                    <span class="click-hint">➕ Ampliar nodo</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- FILA 3: NODO 4 (GRADO DE NOVEDAD) -->
+        <div class="level-row">
+            <div class="concept-node node-blue" id="node-4" onclick="triggerNodeClick(this, 4)" onmouseenter="highlightNodeConnections('node-4', true)" onmouseleave="highlightNodeConnections('node-4', false)">
+                <span class="node-number">Concepto 4 • Grado de Impacto</span>
+                <h3 class="node-title">4. Innovación Incremental vs. Radical (Disruptiva)</h3>
+                <p class="node-summary">Contraste entre mejoras continuas progresivas sobre lo existente y saltos cualitativos revolucionarios que crean nuevos mercados.</p>
+                <div class="node-footer">
+                    <span>Ref: Structuralia (2021); FMI (2024)</span>
+                    <span class="click-hint">➕ Ampliar nodo</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- FILA 4: NODO 5 (INNOVACIÓN SOCIAL) -->
+        <div class="level-row">
+            <div class="concept-node node-green" id="node-5" onclick="triggerNodeClick(this, 5)" onmouseenter="highlightNodeConnections('node-5', true)" onmouseleave="highlightNodeConnections('node-5', false)">
+                <span class="node-number">Concepto 5 • Sostenibilidad y Equidad</span>
+                <h3 class="node-title">5. Innovación Social y Comunitaria</h3>
+                <p class="node-summary">Soluciones eficaces, sostenibles y equitativas a problemas sociales, ambientales, educativos o de salud pública cuyos beneficios son colectivos.</p>
+                <div class="node-footer">
+                    <span>Ref: Ochoa Sierra (2013); CEPAL</span>
+                    <span class="click-hint">➕ Ampliar nodo</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- FILA 5: NODO 6 (FUENTES DE OPORTUNIDAD DE DRUCKER) -->
+        <div class="level-row">
+            <div class="concept-node node-amber" id="node-6" onclick="triggerNodeClick(this, 6)" onmouseenter="highlightNodeConnections('node-6', true)" onmouseleave="highlightNodeConnections('node-6', false)">
+                <span class="node-number">Concepto 6 • Diagnóstico Proactivo</span>
+                <h3 class="node-title">6. Las 7 Fuentes de Innovación (Peter Drucker)</h3>
+                <p class="node-summary">disciplina sistemática de monitoreo del entorno interno (4 fuentes) y externo (3 fuentes) para detectar oportunidades de innovación.</p>
+                <div class="node-footer">
+                    <span>Ref: Drucker (1985); García Manjón (2023)</span>
+                    <span class="click-hint">➕ Ampliar nodo</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- FILA 6: NODO 7 (FUENTES INTERNAS) -->
+        <div class="level-row">
+            <div class="concept-node node-amber" id="node-7" onclick="triggerNodeClick(this, 7)" onmouseenter="highlightNodeConnections('node-7', true)" onmouseleave="highlightNodeConnections('node-7', false)">
+                <span class="node-number">Concepto 7 • Origen Interno (Empresa/Sector)</span>
+                <h3 class="node-title">7. Fuentes Internas: Inesperados, Incongruencias, Procesos y Mercado</h3>
+                <p class="node-summary">Hallazgos derivados de sucesos imprevistos, brechas entre realidad y expectativa, cuellos de botella operativos y cambios en la estructura del sector.</p>
+                <div class="node-footer">
+                    <span>Ref: Drucker (1985); INSST (2025)</span>
+                    <span class="click-hint">➕ Ampliar nodo</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- FILA 7: NODO 8 (FUENTES EXTERNAS) -->
+        <div class="level-row">
+            <div class="concept-node node-orange" id="node-8" onclick="triggerNodeClick(this, 8)" onmouseenter="highlightNodeConnections('node-8', true)" onmouseleave="highlightNodeConnections('node-8', false)">
+                <span class="node-number">Concepto 8 • Origen Externo (Entorno Social/Científico)</span>
+                <h3 class="node-title">8. Fuentes Externas: Demografía, Percepción y Nuevos Conocimientos</h3>
+                <p class="node-summary">Oportunidades nacidas de tendencias poblacionales, nuevos valores culturales (sustentabilidad) y avances científicos o tecnológicos disruptivos.</p>
+                <div class="node-footer">
+                    <span>Ref: Drucker (1985); Raya González (2018)</span>
+                    <span class="click-hint">➕ Ampliar nodo</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- FILA 8: NODO 9 (TRANSFERENCIA DEL CONOCIMIENTO) -->
+        <div class="level-row">
+            <div class="concept-node node-purple" id="node-9" onclick="triggerNodeClick(this, 9)" onmouseenter="highlightNodeConnections('node-9', true)" onmouseleave="highlightNodeConnections('node-9', false)">
+                <span class="node-number">Concepto 9 • Eslabón Investigación-Innovación</span>
+                <h3 class="node-title">9. Transferencia del Conocimiento y Tecnológica</h3>
+                <p class="node-summary">Proceso de transmisión, adaptación y aplicación de hallazgos científicos y capacidades de I+D hacia las organizaciones y la sociedad.</p>
+                <div class="node-footer">
+                    <span>Ref: Raya González (2018); Manual de Oslo</span>
+                    <span class="click-hint">➕ Ampliar nodo</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- FILA 9: NODOS 10 Y 11 (TRIPLE HÉLICE Y PROPIEDAD INTELECTUAL) -->
+        <div class="level-row">
+            <div class="concept-node node-purple" id="node-10" onclick="triggerNodeClick(this, 10)" onmouseenter="highlightNodeConnections('node-10', true)" onmouseleave="highlightNodeConnections('node-10', false)">
+                <span class="node-number">Concepto 10 • Articulación Institucional</span>
+                <h3 class="node-title">10. Modelo de la Triple Hélice y OTRIs</h3>
+                <p class="node-summary">Interacción sinérgica entre Universidad (genera saber), Empresa (produce valor) y Estado (regula y financia) mediante parques tecnológicos y spin-offs.</p>
+                <div class="node-footer">
+                    <span>Ref: Raya González (2018); FMI (2024)</span>
+                    <span class="click-hint">➕ Ampliar nodo</span>
+                </div>
+            </div>
+
+            <div class="concept-node node-purple" id="node-11" onclick="triggerNodeClick(this, 11)" onmouseenter="highlightNodeConnections('node-11', true)" onmouseleave="highlightNodeConnections('node-11', false)">
+                <span class="node-number">Concepto 11 • Gobernanza del Saber</span>
+                <h3 class="node-title">11. Propiedad Intelectual vs. Ciencia Abierta</h3>
+                <p class="node-summary">Equilibrio estratégico entre proteger invenciones (patentes, derechos de autor, secretos industriales) y compartir saberes (open source).</p>
+                <div class="node-footer">
+                    <span>Ref: OMPI / Hervás & Rodríguez (2020)</span>
+                    <span class="click-hint">➕ Ampliar nodo</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- FILA 10: NODO 12 (CULTURA DE INNOVACIÓN Y VIGILANCIA) -->
+        <div class="level-row">
+            <div class="concept-node node-green" id="node-12" onclick="triggerNodeClick(this, 12)" onmouseenter="highlightNodeConnections('node-12', true)" onmouseleave="highlightNodeConnections('node-12', false)">
+                <span class="node-number">Concepto 12 • Capacidad Organizacional</span>
+                <h3 class="node-title">12. Vigilancia Tecnológica y Aprendizaje Continuo</h3>
+                <p class="node-summary">Difusión interna (capacitación, rotación, documentación) e integración de conocimiento externo para evitar duplicar esfuerzos.</p>
+                <div class="node-footer">
+                    <span>Ref: Vigilancia e Inteligencia (2010)</span>
+                    <span class="click-hint">➕ Ampliar nodo</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- FILA 11: NODO 13 (APLICACIÓN EN LA ESPECIALIZACIÓN - ABP) -->
+        <div class="level-row last-row">
+            <div class="concept-node node-final" id="node-13" onclick="triggerNodeClick(this, 13)" onmouseenter="highlightNodeConnections('node-13', true)" onmouseleave="highlightNodeConnections('node-13', false)">
+                <span class="node-number">Concepto 13 • Resultado de Aprendizaje Unidad 2</span>
+                <h3 class="node-title">13. Aplicación Innovadora en la Especialización (ABP)</h3>
+                <p class="node-summary">Escalamiento de soluciones validadas hacia políticas públicas, productividad organizacional, seguridad laboral o transformación educativa.</p>
+                <div class="node-footer">
+                    <span>Ref: Guía Unidad 2 (Tecnológica del Oriente)</span>
+                    <span class="click-hint">➕ Ver casos aplicados y recursos</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL EMERGENTE DINÁMICO -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+    <div class="modal-card" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <div>
+                <span id="modal-badge" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: #93c5fd; font-weight: 700;"></span>
+                <h2 id="modal-title"></h2>
+            </div>
+            <button class="btn-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="modal-body" id="modal-content"></div>
+    </div>
+</div>
+
+<script>
+// BASE DE DATOS INTERACTIVA DE LOS 13 NODOS (UNIDAD 2) CON ENLACES DIRECTOS A ARTÍCULOS Y VIDEOS REALES
+const conceptsData = {
+    1: {
+        badge: "Concepto Clave 1 • Fundamento Epistemológico",
+        title: "1. Proceso de Innovación (Distinción frente a Invención)",
+        pdfText: "De acuerdo con el Manual de Oslo (OCDE/Eurostat), se entiende por innovación la concepción e implantación de cambios significativos en el producto, el proceso, el marketing o la organización de una empresa con el propósito de mejorar los resultados.",
+        amplification: "Una <strong>invención</strong> es una idea nueva, descubrimiento o prototipo teórico, mientras que una <strong>innovación</strong> es esa idea llevada efectivamente a la práctica con éxito para generar mejoras tangibles en eficiencia, calidad, beneficios económicos o impacto social (ej. el primer teléfono móvil fue una invención; la adopción masiva de los smartphones fue la innovación).",
+        application: "En la formulación de proyectos bajo metodología ABP, obliga a que el especialista no se quede en el diseño teórico de una propuesta, sino que estructure su implementación y medición de impacto real.",
+        citation: "Vigilancia e Inteligencia (2010). Resumen del Manual de Oslo sobre Innovación. Madrid: UNED, OTRI (Resumido por S. Jansa).",
+        links: [
+            { label: "📄 PDF Directo: Resumen Oficial del Manual de Oslo (UNED)", url: "https://www.uned.es/universidad/inicio/dam/jcr:9d13d82f-e0e4-4682-9855-12a314702f5a/Resumen%20del%20Manual%20de%20Oslo%20sobre%20Innovaci%C3%B3n.pdf", type: "article" },
+            { label: "🎥 Video Directo: Diferencia entre Creatividad, Invención e Innovación", url: "https://youtu.be/fxKK2pBQpiI?si=mOXNzlebzglv-06g", type: "video" }
+        ]
+    },
+    2: {
+        badge: "Concepto Clave 2 • Tipologías Técnicas del Manual de Oslo",
+        title: "2. Innovación de Producto e Innovación de Proceso",
+        pdfText: "Reconoce el cambio en el 'qué' (bienes o servicios nuevos o mejorados) y en el 'cómo hacerlo' (métodos de producción, distribución, equipamiento o software).",
+        amplification: "<strong>• Innovación de producto:</strong> Introducción de un bien tangible (vehículos eléctricos, medicamentos) o servicio intangible (plataformas de streaming) nuevo o significativamente mejorado en sus características o modo de uso.<br><strong>• Innovación de proceso:</strong> Implementación de nuevos métodos productivos o logísticos, como líneas de montaje robotizadas o software especializado que elevan la eficiencia y calidad.",
+        application: "En ingeniería, salud ocupacional y gerencia de proyectos, permite separar claramente el entregable final ofrecido al usuario (producto/servicio) del flujo técnico u operativo con que se construye (proceso).",
+        citation: "Vigilancia e Inteligencia (2010). Resumen del Manual de Oslo sobre Innovación. UNED. / Structuralia (2021).",
+        links: [
+            { label: "📄 Artículo Directo: Manual de Oslo (Portal Oficial OCDE)", url: "https://www.oecd.org/en/publications/oslo-manual-2018_9789264304604-en.html", type: "article" },
+            { label: "🎥 Video Directo: Los 4 Tipos de Innovación según el Manual de Oslo", url: "https://youtu.be/7EOi772oUoQ?si=e6iC9-LSc5R0sVSJ", type: "video" }
+        ]
+    },
+    3: {
+        badge: "Concepto Clave 3 • Tipologías Comerciales y de Gestión",
+        title: "3. Innovación de Marketing e Innovación Organizacional",
+        pdfText: "Aborda el cambio en el 'cómo venderlo' (diseño, empaque, promoción, precio) y en el 'cómo organizarse' (prácticas de negocio, agilidad y relaciones externas).",
+        amplification: "<strong>• Innovación de marketing:</strong> Estrategias comerciales novedosas como modelos de suscripción en industrias tradicionales o campañas virales para abrir mercados.<br><strong>• Innovación organizacional:</strong> Reestructuración interna hacia marcos ágiles, trabajo colaborativo interdepartamental o alianzas estratégicas inéditas que mejoran el clima laboral y la adaptabilidad.",
+        application: "La guía subraya que los cuatro tipos no son excluyentes: lanzar un producto tecnológico suele exigir simultáneamente rediseñar procesos, renovar el marketing y reorganizar los equipos.",
+        citation: "Vigilancia e Inteligencia (2010). Resumen del Manual de Oslo sobre Innovación. Madrid: UNED.",
+        links: [
+            { label: "📄 Artículo Directo: Innovación Organizacional y de Marketing (Dialnet)", url: "https://dialnet.unirioja.es/descarga/articulo/4714355.pdf", type: "article" },
+            { label: "🎥 Video Directo: Ejemplos de Innovación en Procesos, Producto y Gestión", url: "https://youtu.be/pany6wS3tkE?si=KAzSSnc_xT2To5of", type: "video" }
+        ]
+    },
+    4: {
+        badge: "Concepto Clave 4 • Clasificación por Grado de Novedad",
+        title: "4. Innovación Incremental vs. Innovación Radical (Disruptiva)",
+        pdfText: "Clasifica las innovaciones según la magnitud del cambio y su impacto sobre los mercados y sistemas existentes.",
+        amplification: "<strong>• Innovación incremental:</strong> Mejoras graduales y continuas sobre productos o procesos existentes que optimizan costos, calidad o desempeño (ej. nuevas versiones de un software o modelos anuales de automóviles). Conlleva menor riesgo.<br><strong>• Innovación radical o disruptiva:</strong> Saltos cualitativos basados en tecnologías emergentes que redefinen industrias enteras o crean nuevos mercados (ej. del teléfono fijo al smartphone, o plataformas tipo Uber). Implica mayor incertidumbre y requiere más investigación previa.",
+        application: "Un gestor de proyectos debe equilibrar el portafolio de su organización: usar metodologías de mejora continua para innovaciones incrementales e investigación rigurosa para apuestas radicales.",
+        citation: "Fondo Monetario Internacional (2024). Economía e innovación (M. Kremer). Finanzas & Desarrollo. / Structuralia (2021).",
+        links: [
+            { label: "📄 Artículo Directo: Economía e Innovación - Michael Kremer (FMI, 2024)", url: "https://www.imf.org/es/Publications/fandd/issues/2024/03/Symposium-Economics-and-innovation-Michael-Kremer", type: "article" },
+            { label: "🎥 Video Directo: Innovación Incremental vs. Innovación Disruptiva", url: "https://youtu.be/QAEnLpUn7qM?si=G3dNdDFeKWKK8ZIw", type: "video" }
+        ]
+    },
+    5: {
+        badge: "Concepto Clave 5 • Transformación Pública y Comunitaria",
+        title: "5. Innovación Social y Desarrollo Sostenible",
+        pdfText: "Busca nuevas soluciones a problemas sociales y ambientales (pobreza, exclusión, salud pública, educación) más efectivas, eficientes y sostenibles que las prácticas actuales.",
+        amplification: "A diferencia de la innovación meramente comercial, sus beneficios se distribuyen en la sociedad. No siempre requiere alta tecnología; puede consistir en un nuevo modelo de intervención o cooperación, como bancos de alimentos comunitarios, plataformas colaborativas vecinales o programas de economía circular.",
+        application: "Eje transversal en proyectos del sector público, tercer sector, salud ocupacional e intervenciones psicopedagógicas orientadas a la equidad.",
+        citation: "Ochoa Sierra, L. (2013). Investigación e innovación educativas: panorama general. UNAL.",
+        links: [
+            { label: "📄 Publicación Directa: Innovación Social en América Latina (CEPAL)", url: "https://www.cepal.org/es/temas/innovacion-social/acerca-innovacion-social", type: "article" },
+            { label: "🎥 Video Directo: ¿Qué es la Innovación Social y cómo transforma comunidades?", url: "https://youtu.be/MKFltzF6ToA?si=R73nOSY8zezMEP2C", type: "video" }
+        ]
+    },
+    6: {
+        badge: "Concepto Clave 6 • Disciplina del Diagnóstico",
+        title: "6. Las 7 Fuentes de Oportunidades de Innovación (Peter Drucker)",
+        pdfText: "Plantea que la mayoría de innovaciones exitosas provienen de una búsqueda consciente y sistemática de oportunidades más que de chispazos aislados de inspiración.",
+        amplification: "Peter Drucker (1985) demostró que las oportunidades para innovar se dividen en <strong>cuatro fuentes internas</strong> (dentro de la empresa o sector industrial) y <strong>tres fuentes externas</strong> (en el entorno social, cultural y científico). Las organizaciones líderes crean sistemas permanentes de monitoreo para examinar estas siete fuentes.",
+        application: "Sustituye la improvisación por un método estructurado de diagnóstico en la fase inicial del Aprendizaje Basado en Proyectos (ABP).",
+        citation: "Drucker, P. (1985). Innovation and Entrepreneurship. Harper & Row. (Citado en García Manjón, J. V., 2023).",
+        links: [
+            { label: "📄 Artículo Directo: Las 7 Fuentes de Innovación de Peter Drucker", url: "https://hbr.org/2002/08/the-discipline-of-innovation", type: "article" },
+            { label: "🎥 Video Directo: Las 7 Fuentes de Innovación según Peter Drucker", url: "https://www.youtube.com/watch?v=Pj6eN5N7J2E", type: "video" }
+        ]
+    },
+    7: {
+        badge: "Concepto Clave 7 • Fuentes 1 a 4 de Drucker",
+        title: "7. Fuentes Internas: Sucesos Inesperados, Incongruencias, Procesos e Industria",
+        pdfText: "Cuatro síntomas internos dentro de la organización o sector que revelan oportunidades inmediatas para innovar.",
+        amplification: "<strong>1. Sucesos inesperados:</strong> Éxitos o fracasos sorpresivos que revelan nuevos usos o demandas.<br><strong>2. Incongruencias:</strong> Discrepancias entre lo que es y lo que debería ser (ej. pacientes que buscan trato personalizado frente a sistemas de salud enfocados solo en rapidez).<br><strong>3. Necesidades de proceso:</strong> Cuellos de botella o etapas manuales lentas que claman por automatización.<br><strong>4. Cambios en la industria o el mercado:</strong> Alteraciones en la forma de competir, acuerdos comerciales o digitalización sectorial.",
+        application: "Permite auditar internamente una unidad productiva, hospital o institución educativa para formular proyectos de mejora inmediata.",
+        citation: "Drucker, P. (1985). Innovation and Entrepreneurship. / García Manjón, J. V. (2023).",
+        links: [
+            { label: "📄 Guía Directa: Metodología e Investigación en el Trabajo (INSST)", url: "https://www.insst.es/documents/94886/2927460/Procedimiento+de+investigacion+de+casos+de+EP+2022.pdf/4efff37f-248f-ed02-61a7-c2744dcb8d62?t=1776942390778", type: "article" },
+            { label: "🎥 Video Directo: Detección de Oportunidades e Innovación en Procesos", url: "https://youtu.be/EoZyfJzraCc?si=KExdCWA3LnPPOTTL", type: "video" }
+        ]
+    },
+    8: {
+        badge: "Concepto Clave 8 • Fuentes 5 a 7 de Drucker",
+        title: "8. Fuentes Externas: Demografía, Percepción y Nuevos Conocimientos",
+        pdfText: "Tres fuerzas del entorno social, cultural y científico-tecnológico que originan innovaciones de alto impacto.",
+        amplification: "<strong>5. Cambios demográficos:</strong> Envejecimiento poblacional (demanda de salud y movilidad adaptada) o auge de nativos digitales (educación en línea).<br><strong>6. Cambios en la percepción o significado:</strong> Nuevos valores culturales, como la conciencia ambiental que impulsa innovaciones verdes.<br><strong>7. Nuevos conocimientos (científicos/tecnológicos):</strong> La fuente más disruptiva pero de mayor tiempo de maduración (ej. baterías de ion-litio para vehículos eléctricos o vacunas de ARN mensajero).",
+        application: "Conecta la vigilancia del entorno macroeconómico y científico con el diseño estratégico de nuevos productos y servicios.",
+        citation: "Drucker, P. (1985). Innovation and Entrepreneurship. / Raya González, P. (2018).",
+        links: [
+            { label: "📄 Guía Interactiva Directa: Introducción a la Investigación (Univ. Veracruzana)", url: "https://www.uv.mx/apps/bdh/investigacion/introduccion.html", type: "article" },
+            { label: "🎥 Video Directo: Cómo la Ciencia y Tecnología impulsan la Innovación", url: "https://youtu.be/o2AN3hRaxuo?si=wjLDsKLv99t5IjBx", type: "video" }
+        ]
+    },
+    9: {
+        badge: "Concepto Clave 9 • Cierre de Brecha Teoría-Práctica",
+        title: "9. Transferencia del Conocimiento y Transferencia Tecnológica",
+        pdfText: "Proceso mediante el cual los conocimientos, descubrimientos o capacidades desarrollados en universidades o centros de I+D son compartidos y aplicados en otros contextos.",
+        amplification: "Cierra la brecha entre la investigación científica y la innovación práctica. El Manual de Oslo subraya que el innovador actúa como un <strong>integrador de conocimiento</strong>: no siempre crea desde cero, sino que combina I+D interna con licencias, patentes universitarias, consultorías especializadas y difusión de terapias o metodologías validadas.",
+        application: "Garantiza que las investigaciones académicas de posgrado no se queden archivadas, sino que se transfieran a las empresas, escuelas o sistemas de salud.",
+        citation: "Raya González, P. (2018). Investigación, desarrollo e innovación universitarios. Madrid: McGraw-Hill.",
+        links: [
+            { label: "📄 Artículo Directo: Transferencia de Conocimiento y Tecnología (OMPI/WIPO)", url: "https://www.wipo.int/es/web/technology-transfer", type: "article" },
+            { label: "🎥 Video Directo: ¿Qué es la Transferencia Tecnológica y de Conocimiento?", url: "https://youtu.be/3BB_dIQn6wA?si=cuyRuokRv5aVrwvz", type: "video" }
+        ]
+    },
+    10: {
+        badge: "Concepto Clave 10 • Ecosistema de Colaboración",
+        title: "10. Modelo de la Triple Hélice y Oficinas de Transferencia (OTRIs)",
+        pdfText: "Describe la interacción articulada entre Universidad, Empresa y Estado como motor de la innovación y el desarrollo socioeconómico.",
+        amplification: "En este modelo: <strong>1) La Universidad</strong> genera conocimiento científico; <strong>2) La Empresa</strong> lo transforma en bienes y servicios productivos; y <strong>3) El Estado</strong> establece políticas públicas, financiamiento y regulación. El puente operativo entre universidad y empresa se canaliza mediante parques tecnológicos, Oficinas de Transferencia de Resultados de Investigación (OTRIs), <em>spin-offs</em> y <em>startups</em> académicas.",
+        application: "Permite estructurar alianzas público-privadas y académicas para financiar y escalar proyectos de innovación en cualquier especialización.",
+        citation: "Raya González, P. (2018). Investigación, desarrollo e innovación universitarios. McGraw-Hill.",
+        links: [
+            { label: "📄 PDF Directo: El Modelo de la Triple Hélice en la Innovación (Redalyc)", url: "https://www.redalyc.org/pdf/280/28049146002.pdf", type: "article" },
+            { label: "🎥 Video Directo: El Modelo de Innovación de la Triple Hélice Explicado", url: "https://youtu.be/HSVPzk4CIaU?si=agEuM_W5uuHotZuo", type: "video" }
+        ]
+    },
+    11: {
+        badge: "Concepto Clave 11 • Estrategia Legal y Difusión",
+        title: "11. Propiedad Intelectual vs. Ciencia Abierta (Open Source)",
+        pdfText: "Regula cómo se protege y comparte estratégicamente el conocimiento innovador para equilibrar retorno de inversión y beneficio colectivo.",
+        amplification: "<strong>• Instrumentos de protección:</strong> Patentes de invención, derechos de autor y secretos industriales, fundamentales para atraer inversión privada y licenciar tecnologías.<br><strong>• Esquemas de apertura:</strong> Ciencia abierta (<em>Open Science</em>) y código abierto (<em>Open Source</em>), que aceleran la colaboración interinstitucional y la mejora colectiva.",
+        application: "Todo proyecto innovador debe definir en su formulación qué activos intangibles se van a registrar/proteger y qué metodologías o buenas prácticas se compartirán abiertamente.",
+        citation: "Hervás Gómez, C. & Rodríguez-Gallego, M. (2020). Innovación e investigación en la sociedad digital. Octaedro.",
+        links: [
+            { label: "📄 Portal Oficial Directo: ¿Qué es la Propiedad Intelectual? (OMPI)", url: "https://www.wipo.int/es/web/about-ip", type: "article" },
+            { label: "🎥 Video Directo: Propiedad Intelectual, Patentes y Derechos de Autor", url: "https://youtu.be/NgfJQ2zmcD4?si=HvHxQD3EnzRm6uuC", type: "video" }
+        ]
+    },
+    12: {
+        badge: "Concepto Clave 12 • Gestión Interna y Externa del Saber",
+        title: "12. Cultura de Transferencia, Difusión Interna y Vigilancia Tecnológica",
+        pdfText: "Promueve el aprendizaje continuo dentro y fuera de la organización mediante prácticas colaborativas y monitoreo tecnológico global.",
+        amplification: "Combina dos vectores: <strong>1) Transferencia interna:</strong> capacitaciones, rotación de personal, talleres y documentación técnica que convierten el conocimiento tácito de los empleados en explícito; y <strong>2) Vigilancia e integración externa:</strong> monitoreo sistemático de avances científicos, clientes, proveedores y competidores para evitar duplicar esfuerzos.",
+        application: "Desarrolla en la organización la 'capacidad de innovar repetidamente' señalada en la Guía de Estudio.",
+        citation: "Vigilancia e Inteligencia (2010). Resumen del Manual de Oslo sobre Innovación. UNED.",
+        links: [
+            { label: "📄 Guía Directa: Metodología Cuantitativa y Cualitativa en Gestión (Fisterra)", url: "https://www.fisterra.com/formacion/metodologia-investigacion/investigacion-cuantitativa-cualitativa/", type: "article" },
+            { label: "🎥 Video Directo: Vigilancia Tecnológica e Inteligencia Competitiva", url: "https://youtu.be/opoADO6nmUc?si=S1TVU8XlRYPBaKzW", type: "video" }
+        ]
+    },
+    13: {
+        badge: "Concepto Clave 13 • Síntesis y Resultado de Aprendizaje",
+        title: "13. Aplicación Innovadora y Escalamiento en la Especialización (ABP)",
+        pdfText: "Materializa el ciclo interdependiente donde el conocimiento origina innovación y la innovación produce nuevo conocimiento transferible a la sociedad.",
+        amplification: "Como destaca el cierre de la Guía (pág. 15), cada especialista actúa como un <strong>agente de transferencia del conocimiento</strong>: por ejemplo, un proyecto innovador en psicopedagogía, salud ocupacional o gerencia que demuestra eficacia empírica puede escalarse hacia políticas públicas, redes académicas, congresos o estándares industriales, logrando una mejora sistémica.",
+        application: "Culmina el ejercicio de Aprendizaje Basado en Proyectos (ABP) integrando teoría, diagnóstico de fuentes de Drucker, tipología Oslo y estrategia de transferencia.",
+        citation: "Ochoa Sierra, L. (2013). Investigación e innovación educativas. UNAL. / Avendaño, F. (2020). Homo Sapiens.",
+        links: [
+            { label: "📄 PDF Directo: Guía de Innovación Educativa de la UNESCO", url: "https://unesdoc.unesco.org/ark:/48223/pf0000247005", type: "article" },
+            { label: "🎥 Video Directo: Aprendizaje Basado en Proyectos (ABP) e Innovación", url: "https://youtu.be/hrBjKEu5EtE?si=DGFRXqgiOu_7xebn", type: "video" }
+        ]
+    }
+};
+
+// LAS 16 CONEXIONES EXPLICADAS ENTRE LOS 13 NODOS DE LA UNIDAD 2
+const connections = [
+    { from: "node-1", to: "node-2", label: "transforma el qué y el cómo producir mediante", type: "standard" },
+    { from: "node-1", to: "node-3", label: "transforma la comercialización y gestión mediante", type: "standard" },
+    { from: "node-2", to: "node-4", label: "evoluciona de forma gradual o disruptiva en", type: "standard" },
+    { from: "node-3", to: "node-4", label: "redefine modelos de negocio según su", type: "standard" },
+    { from: "node-2", to: "node-5", label: "aporta soluciones técnicas y operativas a la", type: "outer-left" },
+    { from: "node-3", to: "node-5", label: "articula redes y alianzas colaborativas en la", type: "outer-right" },
+    { from: "node-4", to: "node-5", label: "orienta su impacto hacia el bienestar colectivo en", type: "standard" },
+    { from: "node-5", to: "node-6", label: "detecta problemáticas de forma proactiva con", type: "standard" },
+    { from: "node-6", to: "node-7", label: "examina síntomas dentro de la organización en", type: "standard" },
+    { from: "node-7", to: "node-8", label: "se complementa con tendencias del entorno en", type: "standard" },
+    { from: "node-8", to: "node-9", label: "convierte hallazgos científicos en valor mediante", type: "standard" },
+    { from: "node-9", to: "node-10", label: "vincula academia, industria y gobierno en el", type: "standard" },
+    { from: "node-9", to: "node-11", label: "regula la protección o apertura del saber con", type: "standard" },
+    { from: "node-10", to: "node-12", label: "fomenta alianzas y vigilancia tecnológica en", type: "standard" },
+    { from: "node-11", to: "node-12", label: "equilibra licenciamiento y difusión interna en", type: "standard" },
+    { from: "node-12", to: "node-13", label: "escala buenas prácticas y soluciones hacia la", type: "standard" }
+];
+
+function drawConnections() {
+    const svg = document.getElementById("svg-connections");
+    const labelsContainer = document.getElementById("labels-container");
+    const canvas = document.getElementById("map-canvas");
+    if (!svg || window.innerWidth <= 1024) return;
+
+    svg.innerHTML = `
+        <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="#475569" />
+            </marker>
+            <marker id="arrow-active" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="#2563eb" />
+            </marker>
+        </defs>
+    `;
+    labelsContainer.innerHTML = "";
+
+    const canvasRect = canvas.getBoundingClientRect();
+
+    connections.forEach((conn, index) => {
+        const elFrom = document.getElementById(conn.from);
+        const elTo = document.getElementById(conn.to);
+        if (!elFrom || !elTo) return;
+
+        const r1 = elFrom.getBoundingClientRect();
+        const r2 = elTo.getBoundingClientRect();
+
+        const x1 = r1.left + r1.width / 2 - canvasRect.left;
+        const y1 = r1.bottom - canvasRect.top;
+        const x2 = r2.left + r2.width / 2 - canvasRect.left;
+        const y2 = r2.top - canvasRect.top;
+
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        let d = "";
+        let labelX = (x1 + x2) / 2;
+        let labelY = (y1 + y2) / 2;
+
+        if (conn.type === "outer-left") {
+            const outX = x1 - 110;
+            const targetX = r2.left - canvasRect.left + 30;
+            d = `M ${x1 - 50} ${y1} C ${outX} ${y1 + 60}, ${outX} ${y2 - 60}, ${targetX} ${y2 - 4}`;
+            labelX = outX + 45;
+            labelY = (y1 + y2) / 2 + 25;
+        } else if (conn.type === "outer-right") {
+            const outX = x1 + 110;
+            const targetX = r2.right - canvasRect.left - 30;
+            d = `M ${x1 + 50} ${y1} C ${outX} ${y1 + 60}, ${outX} ${y2 - 60}, ${targetX} ${y2 - 4}`;
+            labelX = outX - 45;
+            labelY = (y1 + y2) / 2 + 25;
+        } else {
+            const midY = (y1 + y2) / 2;
+            d = `M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2 - 4}`;
+            if (conn.from === "node-1" && conn.to === "node-2") labelX -= 35;
+            if (conn.from === "node-1" && conn.to === "node-3") labelX += 35;
+            if (conn.from === "node-9" && conn.to === "node-10") labelX -= 35;
+            if (conn.from === "node-9" && conn.to === "node-11") labelX += 35;
+            if (conn.from === "node-10" && conn.to === "node-12") labelX -= 35;
+            if (conn.from === "node-11" && conn.to === "node-12") labelX += 35;
+        }
+
+        path.setAttribute("d", d);
+        path.setAttribute("class", "svg-connector-path");
+        path.setAttribute("data-from", conn.from);
+        path.setAttribute("data-to", conn.to);
+        path.setAttribute("id", `path-${index}`);
+        path.setAttribute("marker-end", "url(#arrow)");
+        svg.appendChild(path);
+
+        const label = document.createElement("div");
+        label.className = "connector-label";
+        label.setAttribute("data-from", conn.from);
+        label.setAttribute("data-to", conn.to);
+        label.style.left = `${labelX}px`;
+        label.style.top = `${labelY}px`;
+        label.textContent = conn.label;
+        labelsContainer.appendChild(label);
+    });
+}
+
+// Iluminar dinámicamente las flechas y etiquetas al pasar el cursor sobre un nodo
+function highlightNodeConnections(nodeId, isHover) {
+    const paths = document.querySelectorAll(`.svg-connector-path[data-from="${nodeId}"], .svg-connector-path[data-to="${nodeId}"]`);
+    const labels = document.querySelectorAll(`.connector-label[data-from="${nodeId}"], .connector-label[data-to="${nodeId}"]`);
+
+    paths.forEach(p => {
+        if (isHover) {
+            p.classList.add("highlight-path");
+            p.setAttribute("marker-end", "url(#arrow-active)");
+        } else {
+            p.classList.remove("highlight-path");
+            p.setAttribute("marker-end", "url(#arrow)");
+        }
+    });
+
+    labels.forEach(l => {
+        if (isHover) l.classList.add("highlight-label");
+        else l.classList.remove("highlight-label");
+    });
+}
+
+// Animación de rebote al hacer clic antes de abrir el modal
+function triggerNodeClick(element, id) {
+    element.classList.remove("node-pulse-click");
+    void element.offsetWidth;
+    element.classList.add("node-pulse-click");
+    openConceptModal(id);
+}
+
+function openConceptModal(id) {
+    const data = conceptsData[id];
+    if (!data) return;
+
+    document.getElementById("modal-badge").textContent = data.badge;
+    document.getElementById("modal-title").textContent = data.title;
+
+    let linksHtml = data.links.map(l => `
+        <a class="btn-resource ${l.type === 'video' ? 'video-btn' : ''}" href="${l.url}" target="_blank" rel="noopener noreferrer">
+            ${l.label}
+        </a>
+    `).join("");
+
+    document.getElementById("modal-content").innerHTML = `
+        <div class="modal-section" style="border-left-color: #0f172a;">
+            <h4>📌 Síntesis Conceptual</h4>
+            <div style="font-weight: 600; color: #0f172a;">"${data.pdfText}"</div>
+        </div>
+        <div class="modal-section">
+            <h4>📖 Profundización Teórica y Ejemplos</h4>
+            <div>${data.amplification}</div>
+        </div>
+        <div class="modal-section" style="border-left-color: #16a34a;">
+            <h4>🎯 Aplicación en el Contexto de la Especialización (ABP)</h4>
+            <div>${data.application}</div>
+        </div>
+        <div class="modal-section" style="border-left-color: #d97706;">
+            <h4>📚 Sustento Bibliográfico (Normas APA)</h4>
+            <div style="font-style: italic;">${data.citation}</div>
+        </div>
+        <div style="margin-top: 14px;">
+            <strong style="font-size: 12.5px; color: #0f172a;">🌐 Recursos Directos de Profundización (Artículos y Videos):</strong>
+            <div class="modal-links">${linksHtml}</div>
+        </div>
+    `;
+    document.getElementById("modal-overlay").classList.add("active");
+}
+
+function openComparativeModal() {
+    document.getElementById("modal-badge").textContent = "Síntesis Teórica • Proceso de Innovación";
+    document.getElementById("modal-title").textContent = "Matriz Comparativa: Tipologías (Manual de Oslo) y Fuentes de Drucker (1985)";
+    document.getElementById("modal-content").innerHTML = `
+        <p style="margin-top:0;">Síntesis estructurada de los marcos de referencia centrales:</p>
+        <table class="comp-table">
+            <thead>
+                <tr>
+                    <th>Dimensión Analítica</th>
+                    <th>Categorías Clave</th>
+                    <th>Enfoque / Pregunta que Responde</th>
+                    <th>Ejemplo Aplicado</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>1. Tipos según Manual de Oslo</strong></td>
+                    <td>Producto, Proceso, Marketing y Organizacional</td>
+                    <td>¿Dónde se produce el cambio? (El qué, cómo hacerlo, cómo venderlo, cómo organizarse).</td>
+                    <td>Vehículos eléctricos (producto), línea robotizada (proceso), suscripción (marketing), células ágiles (organizacional).</td>
+                </tr>
+                <tr>
+                    <td><strong>2. Grado de Novedad</strong></td>
+                    <td>Incremental vs. Radical / Disruptiva</td>
+                    <td>¿Cuánto cambia y qué nivel de riesgo/incertidumbre conlleva?</td>
+                    <td>Actualización de software (incremental) vs. irrupción de smartphones o plataformas tipo Uber (radical).</td>
+                </tr>
+                <tr>
+                    <td><strong>3. Fuentes Internas (Drucker)</strong></td>
+                    <td>1. Inesperados, 2. Incongruencias, 3. Necesidad de proceso, 4. Industria/mercado</td>
+                    <td>¿Qué tensiones o hallazgos ocurren dentro de la organización o sector?</td>
+                    <td>Automatizar una etapa manual lenta o resolver la brecha entre rapidez médica y trato personalizado.</td>
+                </tr>
+                <tr>
+                    <td><strong>4. Fuentes Externas (Drucker)</strong></td>
+                    <td>5. Demografía, 6. Percepción/significado, 7. Nuevos conocimientos</td>
+                    <td>¿Qué cambios sociales, culturales o científicos abren oportunidades?</td>
+                    <td>Servicios para población longeva, productos sostenibles verdes o vacunas basadas en ARN mensajero.</td>
+                </tr>
+                <tr>
+                    <td><strong>5. Mecanismos de Transferencia</strong></td>
+                    <td>Triple Hélice, OTRIs, Propiedad Intelectual y Ciencia Abierta</td>
+                    <td>¿Cómo pasa el hallazgo científico de la universidad a la empresa y la sociedad?</td>
+                    <td>Patentes licenciadas por OTRIs, creación de spin-offs académicas y escalamiento de políticas públicas.</td>
+                </tr>
+            </tbody>
+        </table>
+    `;
+    document.getElementById("modal-overlay").classList.add("active");
+}
+
+function openReferencesModal() {
+    document.getElementById("modal-badge").textContent = "Bibliografía Oficial";
+    document.getElementById("modal-title").textContent = "Referencias Bibliográficas Oficiales (Normas APA)";
+    document.getElementById("modal-content").innerHTML = `
+        <ul style="line-height: 1.7; padding-left: 20px;">
+            <li><strong>Avendaño, F. (2020).</strong> <em>Quehaceres de la investigación</em>. Homo Sapiens Ediciones.</li>
+            <li><strong>Baena Paz, G. M. E. (2017).</strong> <em>Metodología de la investigación</em> (3ª ed.). Grupo Editorial Patria.</li>
+            <li><strong>Drucker, P. (1985).</strong> <em>Innovation and Entrepreneurship</em>. New York: Harper & Row. (Citado en García Manjón, J. V. (2023). <em>Las 7 fuentes de oportunidades de innovación según Drucker</em>).</li>
+            <li><strong>Fisterra (2022).</strong> <em>Guía de9:34 p. m. 23/10/20265 investigación cuantitativa vs cualitativa</em>; <strong>Structuralia (2021).</strong> <em>Blog de gestión de la innovación</em>.</li>
+            <li><strong>Fondo Monetario Internacional (2024).</strong> Economía e innovación (M. Kremer). <em>Finanzas & Desarrollo</em>, marzo 2024.</li>
+            <li><strong>García Manjón, J. V. (2023).</strong> <em>Las 7 fuentes de oportunidades de innovación según Drucker</em>. Recuperado de jvmanjon.com.</li>
+            <li><strong>Hervás Gómez, C. & Rodríguez-Gallego, M. (Coords.). (2020).</strong> <em>Innovación e investigación en la sociedad digital</em>. Barcelona: Octaedro.</li>
+            <li><strong>Instituto Nacional de Seguridad y Salud en el Trabajo - INSST (2025).</strong> <em>Tema 26: La investigación científica</em>. Temario oposición INSST, Versión abril 2025.</li>
+            <li><strong>Ochoa Sierra, L. (2013).</strong> <em>Investigación e innovación educativas: panorama general</em>. Bogotá: Universidad Nacional de Colombia.</li>
+            <li><strong>Raya González, P. (2018).</strong> <em>Investigación, desarrollo e innovación universitarios</em>. Madrid: McGraw-Hill.</li>
+            <li><strong>Universidad Veracruzana (s/f).</strong> <em>Introducción a la investigación: guía interactiva</em>. Recuperado de uv.mx.</li>
+            <li><strong>Vigilancia e Inteligencia (2010).</strong> <em>Resumen del Manual de Oslo sobre Innovación</em>. Madrid: UNED, OTRI (Resumido por S. Jansa).</li>
+        </ul>
+    `;
+    document.getElementById("modal-overlay").classList.add("active");
+}
+
+function closeModal(event) {
+    if (!event || event.target.id === "modal-overlay") {
+        document.getElementById("modal-overlay").classList.remove("active");
+    }
+}
+
+window.addEventListener("load", drawConnections);
+window.addEventListener("resize", drawConnections);
+</script>
+</body>
+</html>
